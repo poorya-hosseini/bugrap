@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+ <head>
+  <meta charset="UTF-8" name="design-properties" content="{&quot;RULERS_VISIBLE&quot;:true,&quot;GUIDELINES_VISIBLE&quot;:false,&quot;SNAP_TO_OBJECTS&quot;:true,&quot;SNAP_TO_GRID&quot;:true,&quot;SNAPPING_DISTANCE&quot;:10,&quot;JAVA_SOURCES_ROOT&quot;:&quot;src/main/java&quot;,&quot;THEME&quot;:&quot;bugrap&quot;}">
+ </head> 
+ <body> 
+  <vaadin-vertical-layout caption="Register an account..." style-name="borderless" spacing size-auto margin> 
+   <vaadin-label size-auto plain-text>
+     Sign In or Register 
+   </vaadin-label> 
+   <vaadin-text-field input-prompt="Username (email)" width="227px" _id="usernameField"></vaadin-text-field> 
+   <vaadin-password-field input-prompt="Password" width="227px" _id="passwordField"></vaadin-password-field> 
+   <vaadin-horizontal-layout spacing> 
+    <vaadin-button plain-text _id="singInButton">
+      Sign In 
+    </vaadin-button> 
+    <vaadin-check-box caption="Remember me" _id="rememberMeCheckBox" :middle></vaadin-check-box> 
+   </vaadin-horizontal-layout> 
+   <vaadin-link caption="Forgot your password?" _id="recoverPasswordLink"></vaadin-link> 
+   <vaadin-panel size-auto> 
+    <vaadin-vertical-layout style-name="well" spacing width="226px" margin> 
+     <vaadin-label size-auto plain-text>
+       New Here? 
+     </vaadin-label> 
+     <vaadin-button style-name="link" plain-text _id="registerButton">
+       Register an account... 
+     </vaadin-button> 
+    </vaadin-vertical-layout> 
+   </vaadin-panel> 
+  </vaadin-vertical-layout>  
+ </body>
+</html>

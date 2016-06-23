@@ -1,0 +1,8 @@
+.classpath
+.project
+.settings
+.designer
+bugrap.log
+bugrap.properties
+bugrap.script
+/target/
