@@ -35,6 +35,12 @@ import com.vaadin.ui.VerticalLayout;
 
 public class Overview extends VerticalLayout implements View {
 	private static final String ALL_VERSIONS_NAME = "All Versions";
+	private HashMap<String, Project> projectNames = new HashMap<String, Project>();
+	private HashMap<String, HashMap<String,ProjectVersion>> projectVersions =
+			new HashMap<String, HashMap<String,ProjectVersion>>();
+	
+	private Project currentProject=null;
+	private ProjectVersion currentProjectVersion=null;
 	// ==========< Back-end Binding>==========
 	private BugrapUI bugrapUI;
 	private BugrapRepository repository;
@@ -55,16 +61,30 @@ public class Overview extends VerticalLayout implements View {
 
 	//
 	private Grid reportTable;
-	
+
 	//
 	private Panel editReportPanel;
 	// private ButtonGroup myButtonGroup;
-
 	public Overview(BugrapUI bugrapUI) {
+		
 		this.bugrapUI = bugrapUI;
 		this.repository = bugrapUI.getRepository();
 		this.loginSatus = false;
 
+		// create projects and versions maps
+		for (Project project : repository.findProjects()) {
+			projectNames.put(project.getName(), project);
+			
+			for(ProjectVersion version:repository.findProjectVersions(project)) {
+				if(!projectVersions.containsKey(project.getName())) {
+					projectVersions.put(project.getName(), new HashMap<String,ProjectVersion>());
+				}
+				projectVersions.get(project.getName()).put(version.getVersion(), version);
+			}
+			projectVersions.get(project.getName()).put(ALL_VERSIONS_NAME, null);
+		}
+		
+		
 		// Logout button
 		logout = new Button("Logout", e -> this.logout());
 
@@ -72,6 +92,7 @@ public class Overview extends VerticalLayout implements View {
 		projNameComboBox = new ComboBox("Choose project: ");
 		projNameComboBox.setNullSelectionAllowed(false);
 		projNameComboBox.addValueChangeListener(e -> {
+			currentProject = projectNames.get(projNameComboBox.getValue());
 			versionUpdate();
 			dBarUpdate();
 			updateTable();
@@ -81,11 +102,9 @@ public class Overview extends VerticalLayout implements View {
 		version = new NativeSelect("Reports for");
 		version.setNullSelectionAllowed(false);
 		version.addValueChangeListener(e -> {
+			currentProjectVersion = projectVersions.get(currentProject.getName()).get(version.getValue());
 			dBarUpdate();
 			updateTable();
-			if(e.getProperty().getValue()!=null) {
-			Notification.show(e.getProperty().getValue().toString());
-			}
 		});
 
 		// Report distribution Bar
@@ -111,7 +130,7 @@ public class Overview extends VerticalLayout implements View {
 
 		// Report Table
 		reportTable = new Grid();
-		
+
 		// Edit Panel
 		editReportPanel = new Panel();
 		editReportPanel.setHeight("300px");
@@ -147,11 +166,10 @@ public class Overview extends VerticalLayout implements View {
 		user.setWidth("150px");
 
 		// Set Project name
-		Set<Project> projectNames = repository.findProjects();
-		for (Project i : projectNames) {
-			projNameComboBox.addItem(i);
+		for (String projectName : projectNames.keySet()) {
+			projNameComboBox.addItem(projectName);
 		}
-		projNameComboBox.setValue(projectNames.iterator().next());
+		projNameComboBox.setValue(projectNames.keySet().iterator().next());
 
 		FormLayout projName = new FormLayout(projNameComboBox);
 		projName.setMargin(false);
@@ -166,8 +184,6 @@ public class Overview extends VerticalLayout implements View {
 	}
 
 	private HorizontalLayout ver_And_DBar() {
-		versionUpdate();
-		dBarUpdate();
 
 		FormLayout versionLayout = new FormLayout(version);
 		versionLayout.setMargin(false);
@@ -323,51 +339,46 @@ public class Overview extends VerticalLayout implements View {
 
 		return statusMenu;
 	}
-	HashMap<String, ProjectVersion> projectsMap=new HashMap<String,ProjectVersion>();
-	//add values from Repository to map
-	//add null value with hash code "all versions"
-	
+
+	// add values from Repository to map
+	// add null value with hash code "all versions"
+
 	private void versionUpdate() {
 		version.removeAllItems();
-
-		Set<ProjectVersion> versionItems = repository.findProjectVersions((Project) projNameComboBox.getValue());
-		for (ProjectVersion i : versionItems) {
-			Item item=version.addItem(i);
+		for (String versionName : projectVersions.get(currentProject.getName()).keySet()) {
+			version.addItem(versionName);
 		}
-		Item item = version.addItem(ALL_VERSIONS_NAME);
 		version.select(ALL_VERSIONS_NAME);
 	}
 
 	private void dBarUpdate() {
 
-		ProjectVersion selectedVersion = version.getValue() == ALL_VERSIONS_NAME ? null
-				: (ProjectVersion) version.getValue();
-		if (selectedVersion == null) {
-			dBar.setPartSize(0, repository.countClosedReports((Project)projNameComboBox.getValue()),
-					Long.toString(repository.countClosedReports((Project)projNameComboBox.getValue())));
+		if (currentProjectVersion == null) {
+			long nProjects=repository.countClosedReports(currentProject);
+			dBar.setPartSize(0, nProjects, Long.toString(nProjects));
+			
+			nProjects=repository.countOpenedReports(currentProject);
+			dBar.setPartSize(1,nProjects,Long.toString(nProjects));
 
-			dBar.setPartSize(1, repository.countOpenedReports((Project)projNameComboBox.getValue()),
-					Long.toString(repository.countOpenedReports((Project)projNameComboBox.getValue())));
-
-			dBar.setPartSize(2, repository.countUnassignedReports((Project)projNameComboBox.getValue()),
-					Long.toString(repository.countUnassignedReports((Project)projNameComboBox.getValue())));
+			nProjects=repository.countUnassignedReports(currentProject);
+			dBar.setPartSize(2, nProjects, Long.toString(nProjects));
 		} else {
-			dBar.setPartSize(0, repository.countClosedReports(selectedVersion),
-					Long.toString(repository.countClosedReports(selectedVersion)));
+			long nVersions=repository.countClosedReports(currentProjectVersion);
+			dBar.setPartSize(0, nVersions, Long.toString(nVersions));
+			
+			nVersions=repository.countOpenedReports(currentProjectVersion);
+			dBar.setPartSize(1,nVersions,Long.toString(nVersions));
 
-			dBar.setPartSize(1, repository.countOpenedReports(selectedVersion),
-					Long.toString(repository.countOpenedReports(selectedVersion)));
-
-			dBar.setPartSize(2, repository.countUnassignedReports(selectedVersion),
-					Long.toString(repository.countUnassignedReports(selectedVersion)));
+			nVersions=repository.countUnassignedReports(currentProjectVersion);
+			dBar.setPartSize(2, nVersions, Long.toString(nVersions));
 		}
 	}
-	
+
 	private void updateTable() {
 		reportTable.setSizeFull();
 		ReportsQuery query = new ReportsQuery();
-		query.project = (Project) projNameComboBox.getValue();
-		query.projectVersion = version.getValue() == ALL_VERSIONS_NAME ? null : (ProjectVersion) version.getValue();
+		query.project = currentProject;
+		query.projectVersion = currentProjectVersion;
 		query.reportStatuses = null;
 		query.reportAssignee = assignee;
 
@@ -382,9 +393,10 @@ public class Overview extends VerticalLayout implements View {
 			query.reportStatuses.remove(i);
 		}
 		reportTable.setContainerDataSource(new BeanItemContainer<>(Report.class, reports));
-		if(version.getValue() == ALL_VERSIONS_NAME){
-			reportTable.setColumns("version","priority", "type", "summary", "assigned", "timestamp", "reportedTimestamp");
-		}else{
+		if (version.getValue() == ALL_VERSIONS_NAME) {
+			reportTable.setColumns("version", "priority", "type", "summary", "assigned", "timestamp",
+					"reportedTimestamp");
+		} else {
 			reportTable.setColumns("priority", "type", "summary", "assigned", "timestamp", "reportedTimestamp");
 		}
 	}
